@@ -1,0 +1,11 @@
+<dependencies>
+  <androidPackages>
+    <androidPackage spec="com.hyprmx.android:HyprMX-Max:6.4.2.0">
+    </androidPackage>
+  </androidPackages>
+
+  <iosPods>
+    <iosPod name="HYPRMaxAdapter" version="6.4.2.0" bitcodeEnabled="false">
+    </iosPod>
+  </iosPods>
+</dependencies>

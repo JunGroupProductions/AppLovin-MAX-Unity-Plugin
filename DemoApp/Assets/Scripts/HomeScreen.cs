@@ -5,17 +5,17 @@ using com.adjust.sdk;
 
 public class HomeScreen : MonoBehaviour
 {
-    private const string MaxSdkKey = "ENTER_MAX_SDK_KEY_HERE";
+    private const string MaxSdkKey = "6PWwCzA5D1Qa72M7sS1JDgn87od9o6UMSEITB46TEkDFSIy8bouUDhZ9Igq_dH2mm0ahzFSePdK-7mxeTE0iQ2";
 
 #if UNITY_IOS
-    private const string InterstitialAdUnitId = "ENTER_IOS_INTERSTITIAL_AD_UNIT_ID_HERE";
-    private const string RewardedAdUnitId = "ENTER_IOS_REWARD_AD_UNIT_ID_HERE";
-    private const string BannerAdUnitId = "ENTER_IOS_BANNER_AD_UNIT_ID_HERE";
+    private const string InterstitialAdUnitId = "5a096b8d387f546b";
+    private const string RewardedAdUnitId = "800db76d3eeb8d92";
+    private const string BannerAdUnitId = "d66e6896643adaef";
     private const string MRecAdUnitId = "ENTER_IOS_MREC_AD_UNIT_ID_HERE";
 #else // UNITY_ANDROID
-    private const string InterstitialAdUnitId = "ENTER_ANDROID_INTERSTITIAL_AD_UNIT_ID_HERE";
-    private const string RewardedAdUnitId = "ENTER_ANDROID_REWARD_AD_UNIT_ID_HERE";
-    private const string BannerAdUnitId = "ENTER_ANDROID_BANNER_AD_UNIT_ID_HERE";
+    private const string InterstitialAdUnitId = "3ef6aaa73fb63a48";
+    private const string RewardedAdUnitId = "fec318d39b09c4ed";
+    private const string BannerAdUnitId = "07666174632b4a82";
     private const string MRecAdUnitId = "ENTER_ANDROID_MREC_AD_UNIT_ID_HERE";
 #endif
 
