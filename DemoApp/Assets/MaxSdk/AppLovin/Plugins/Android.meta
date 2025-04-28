@@ -1,8 +1,5 @@
 fileFormatVersion: 2
-guid: 666c64b10aae14f1da56959c3539e4d1
-labels:
-- al_max
-- al_max_export_path-MaxSdk/AppLovin/Plugins/Android
+guid: df985c2269ad14e3d87ecec4b27b605d
 folderAsset: yes
 DefaultImporter:
   externalObjects: {}

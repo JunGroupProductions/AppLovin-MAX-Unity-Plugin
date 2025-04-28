@@ -1,9 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using AppLovinMax.ThirdParty.MiniJson;
+using AppLovinMax.Internal;
 using UnityEngine;
 
 #if UNITY_IOS && !UNITY_EDITOR
@@ -12,10 +14,26 @@ using System.Runtime.InteropServices;
 
 public abstract class MaxSdkBase
 {
-    // Shared Properties
-    protected static readonly MaxUserSegment SharedUserSegment = new MaxUserSegment();
-    protected static readonly MaxTargetingData SharedTargetingData = new MaxTargetingData();
+    /// <summary>
+    /// This enum represents the user's geography used to determine the type of consent flow shown to the user.
+    /// </summary>
+    public enum ConsentFlowUserGeography
+    {
+        /// <summary>
+        /// User's geography is unknown.
+        /// </summary>
+        Unknown,
 
+        /// <summary>
+        /// The user is in GDPR region.
+        /// </summary>
+        Gdpr,
+
+        /// <summary>
+        /// The user is in a non-GDPR region.
+        /// </summary>
+        Other
+    }
 
 #if UNITY_EDITOR || UNITY_IPHONE || UNITY_IOS
     /// <summary>
@@ -24,7 +42,7 @@ public abstract class MaxSdkBase
     public enum AppTrackingStatus
     {
         /// <summary>
-        /// Device is on < iOS14, AppTrackingTransparency.framework is not available.
+        /// Device is on &lt; iOS14, AppTrackingTransparency.framework is not available.
         /// </summary>
         Unavailable,
 
@@ -49,6 +67,42 @@ public abstract class MaxSdkBase
         Authorized,
     }
 #endif
+
+    /// <summary>
+    /// An enum describing the adapter's initialization status.
+    /// </summary>
+    public enum InitializationStatus
+    {
+        /// <summary>
+        /// The adapter is not initialized. Note: networks need to be enabled for an ad unit id to be initialized.
+        /// </summary>
+        NotInitialized = -4,
+
+        /// <summary>
+        /// The 3rd-party SDK does not have an initialization callback with status.
+        /// </summary>
+        DoesNotApply = -3,
+
+        /// <summary>
+        /// The 3rd-party SDK is currently initializing.
+        /// </summary>
+        Initializing = -2,
+
+        /// <summary>
+        /// The 3rd-party SDK explicitly initialized, but without a status.
+        /// </summary>
+        InitializedUnknown = -1,
+
+        /// <summary>
+        /// The 3rd-party SDK initialization failed.
+        /// </summary>
+        InitializedFailure = 0,
+
+        /// <summary>
+        /// The 3rd-party SDK initialization was successful.
+        /// </summary>
+        InitializedSuccess = 1
+    }
 
     public enum AdViewPosition
     {
@@ -97,6 +151,12 @@ public abstract class MaxSdkBase
 
         public bool IsTestModeEnabled { get; private set; }
 
+        /// <summary>
+        /// Get the user's geography used to determine the type of consent flow shown to the user.
+        /// If no such determination could be made, <see cref="MaxSdkBase.ConsentFlowUserGeography.Unknown"/> will be returned.
+        /// </summary>
+        public ConsentFlowUserGeography ConsentFlowUserGeography { get; private set; }
+
         [Obsolete("This API has been deprecated and will be removed in a future release.")]
         public ConsentDialogState ConsentDialogState { get; private set; }
 
@@ -111,11 +171,26 @@ public abstract class MaxSdkBase
 #if UNITY_EDITOR
             sdkConfiguration.AppTrackingStatus = AppTrackingStatus.Authorized;
 #endif
-            var currentRegion = RegionInfo.CurrentRegion;
-            sdkConfiguration.CountryCode = currentRegion != null ? currentRegion.TwoLetterISORegionName : "US";
+            sdkConfiguration.CountryCode = TryGetCountryCode();
             sdkConfiguration.IsTestModeEnabled = false;
 
             return sdkConfiguration;
+        }
+
+        private static string TryGetCountryCode()
+        {
+            try
+            {
+                return RegionInfo.CurrentRegion.TwoLetterISORegionName;
+            }
+#pragma warning disable 0168
+            catch (Exception ignored)
+#pragma warning restore 0168
+            {
+                // Ignored
+            }
+
+            return "US";
         }
 #endif
 
@@ -126,6 +201,20 @@ public abstract class MaxSdkBase
             sdkConfiguration.IsSuccessfullyInitialized = MaxSdkUtils.GetBoolFromDictionary(eventProps, "isSuccessfullyInitialized");
             sdkConfiguration.CountryCode = MaxSdkUtils.GetStringFromDictionary(eventProps, "countryCode", "");
             sdkConfiguration.IsTestModeEnabled = MaxSdkUtils.GetBoolFromDictionary(eventProps, "isTestModeEnabled");
+
+            var consentFlowUserGeographyStr = MaxSdkUtils.GetStringFromDictionary(eventProps, "consentFlowUserGeography", "");
+            if ("1".Equals(consentFlowUserGeographyStr))
+            {
+                sdkConfiguration.ConsentFlowUserGeography = ConsentFlowUserGeography.Gdpr;
+            }
+            else if ("2".Equals(consentFlowUserGeographyStr))
+            {
+                sdkConfiguration.ConsentFlowUserGeography = ConsentFlowUserGeography.Other;
+            }
+            else
+            {
+                sdkConfiguration.ConsentFlowUserGeography = ConsentFlowUserGeography.Unknown;
+            }
 
 #pragma warning disable 0618
             var consentDialogStateStr = MaxSdkUtils.GetStringFromDictionary(eventProps, "consentDialogState", "");
@@ -237,17 +326,39 @@ public abstract class MaxSdkBase
         /// </summary>
         FullscreenAdNotReady = -24,
 
-#if UNITY_ANDROID
+#if UNITY_IOS || UNITY_IPHONE
         /// <summary>
-        /// This error code indicates that the SDK failed to load an ad because it could not find the top Activity.
+        /// This error code indicates you attempted to present a fullscreen ad from an invalid view controller.
         /// </summary>
-        NoActivity = -5601,
+        FullscreenAdInvalidViewController = -25,
+#endif
 
+        /// <summary>
+        /// This error code indicates you are attempting to load a fullscreen ad while another fullscreen ad is already loading.
+        /// </summary>
+        FullscreenAdAlreadyLoading = -26,
+
+        /// <summary>
+        /// This error code indicates you are attempting to load a fullscreen ad while another fullscreen ad is still showing.
+        /// </summary>
+        FullscreenAdLoadWhileShowing = -27,
+
+#if UNITY_ANDROID
         /// <summary>
         /// This error code indicates that the SDK failed to display an ad because the user has the "Don't Keep Activities" developer setting enabled.
         /// </summary>
         DontKeepActivitiesEnabled = -5602,
 #endif
+
+        /// <summary>
+        /// This error code indicates that the SDK failed to load an ad because the publisher provided an invalid ad unit identifier.
+        /// Possible reasons for an invalid ad unit identifier:
+        /// 1. Ad unit identifier is malformed or does not exist
+        /// 2. Ad unit is disabled
+        /// 3. Ad unit is not associated with the current app's package name
+        /// 4. Ad unit was created within the last 30-60 minutes
+        /// </summary>
+        InvalidAdUnitId = -5603
     }
 
     /**
@@ -283,6 +394,7 @@ public abstract class MaxSdkBase
         public double Revenue { get; private set; }
         public string RevenuePrecision { get; private set; }
         public WaterfallInfo WaterfallInfo { get; private set; }
+        public long LatencyMillis { get; private set; }
         public string DspName { get; private set; }
 
         public AdInfo(IDictionary<string, object> adInfoDictionary)
@@ -296,6 +408,7 @@ public abstract class MaxSdkBase
             Revenue = MaxSdkUtils.GetDoubleFromDictionary(adInfoDictionary, "revenue", -1);
             RevenuePrecision = MaxSdkUtils.GetStringFromDictionary(adInfoDictionary, "revenuePrecision");
             WaterfallInfo = new WaterfallInfo(MaxSdkUtils.GetDictionaryFromDictionary(adInfoDictionary, "waterfallInfo", new Dictionary<string, object>()));
+            LatencyMillis = MaxSdkUtils.GetLongFromDictionary(adInfoDictionary, "latencyMillis");
             DspName = MaxSdkUtils.GetStringFromDictionary(adInfoDictionary, "dspName");
         }
 
@@ -309,6 +422,7 @@ public abstract class MaxSdkBase
                    ", placement: " + Placement +
                    ", revenue: " + Revenue +
                    ", revenuePrecision: " + RevenuePrecision +
+                   ", latency: " + LatencyMillis +
                    ", dspName: " + DspName + "]";
         }
     }
@@ -400,6 +514,7 @@ public abstract class MaxSdkBase
         public string AdapterClassName { get; private set; }
         public string AdapterVersion { get; private set; }
         public string SdkVersion { get; private set; }
+        public InitializationStatus InitializationStatus { get; private set; }
 
         public MediatedNetworkInfo(IDictionary<string, object> mediatedNetworkDictionary)
         {
@@ -408,6 +523,8 @@ public abstract class MaxSdkBase
             AdapterClassName = MaxSdkUtils.GetStringFromDictionary(mediatedNetworkDictionary, "adapterClassName", "");
             AdapterVersion = MaxSdkUtils.GetStringFromDictionary(mediatedNetworkDictionary, "adapterVersion", "");
             SdkVersion = MaxSdkUtils.GetStringFromDictionary(mediatedNetworkDictionary, "sdkVersion", "");
+            var initializationStatusInt = MaxSdkUtils.GetIntFromDictionary(mediatedNetworkDictionary, "initializationStatus", (int) InitializationStatus.NotInitialized);
+            InitializationStatus = InitializationStatusFromCode(initializationStatusInt);
         }
 
         public override string ToString()
@@ -415,7 +532,20 @@ public abstract class MaxSdkBase
             return "[MediatedNetworkInfo name: " + Name +
                    ", adapterClassName: " + AdapterClassName +
                    ", adapterVersion: " + AdapterVersion +
-                   ", sdkVersion: " + SdkVersion + "]";
+                   ", sdkVersion: " + SdkVersion +
+                   ", initializationStatus: " + InitializationStatus + "]";
+        }
+
+        private static InitializationStatus InitializationStatusFromCode(int code)
+        {
+            if (Enum.IsDefined(typeof(InitializationStatus), code))
+            {
+                return (InitializationStatus) code;
+            }
+            else
+            {
+                return InitializationStatus.NotInitialized;
+            }
         }
     }
 
@@ -427,6 +557,7 @@ public abstract class MaxSdkBase
         public string MediatedNetworkErrorMessage { get; private set; }
         public string AdLoadFailureInfo { get; private set; }
         public WaterfallInfo WaterfallInfo { get; private set; }
+        public long LatencyMillis { get; private set; }
 
         public ErrorInfo(IDictionary<string, object> errorInfoDictionary)
         {
@@ -436,6 +567,7 @@ public abstract class MaxSdkBase
             MediatedNetworkErrorMessage = MaxSdkUtils.GetStringFromDictionary(errorInfoDictionary, "mediatedNetworkErrorMessage", "");
             AdLoadFailureInfo = MaxSdkUtils.GetStringFromDictionary(errorInfoDictionary, "adLoadFailureInfo", "");
             WaterfallInfo = new WaterfallInfo(MaxSdkUtils.GetDictionaryFromDictionary(errorInfoDictionary, "waterfallInfo", new Dictionary<string, object>()));
+            LatencyMillis = MaxSdkUtils.GetLongFromDictionary(errorInfoDictionary, "latencyMillis");
         }
 
         public override string ToString()
@@ -449,8 +581,58 @@ public abstract class MaxSdkBase
                 stringbuilder.Append(", mediatedNetworkMessage: ").Append(MediatedNetworkErrorMessage);
             }
 
+            stringbuilder.Append(", latency: ").Append(LatencyMillis);
             return stringbuilder.Append(", adLoadFailureInfo: ").Append(AdLoadFailureInfo).Append("]").ToString();
         }
+    }
+
+    /// <summary>
+    /// Inset values for the safe area on the screen used to render banner ads.
+    /// </summary>
+    public class SafeAreaInsets
+    {
+        public int Left { get; private set; }
+        public int Top { get; private set; }
+        public int Right { get; private set; }
+        public int Bottom { get; private set; }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="SafeAreaInsets"/>.
+        /// </summary>
+        /// <param name="insets">An integer array with insets values in the order of left, top, right, and bottom</param>
+        internal SafeAreaInsets(int[] insets)
+        {
+            Left = insets[0];
+            Top = insets[1];
+            Right = insets[2];
+            Bottom = insets[3];
+        }
+
+        public override string ToString()
+        {
+            return "[SafeAreaInsets: Left: " + Left +
+                   ", Top: " + Top +
+                   ", Right: " + Right +
+                   ", Bottom: " + Bottom + "]";
+        }
+    }
+
+    /// <summary>
+    /// Determines whether ad events raised by the AppLovin's Unity plugin should be invoked on the Unity main thread.
+    /// </summary>
+    public static bool? InvokeEventsOnUnityMainThread { get; set; }
+
+    /// <summary>
+    /// The CMP service, which provides direct APIs for interfacing with the Google-certified CMP installed, if any.
+    /// </summary>
+    public static MaxCmpService CmpService
+    {
+        get { return MaxCmpService.Instance; }
+    }
+
+    internal static bool DisableAllLogs
+    {
+        get; private set;
     }
 
     protected static void ValidateAdUnitIdentifier(string adUnitIdentifier, string debugPurpose)
@@ -461,16 +643,10 @@ public abstract class MaxSdkBase
         }
     }
 
-    // Allocate the MaxSdkCallbacks singleton, which receives all callback events from the native SDKs.
-    protected static void InitCallbacks()
+    // Allocate the MaxEventExecutor singleton which handles pushing callbacks from the background to the main thread.
+    protected static void InitializeEventExecutor()
     {
-        var type = typeof(MaxSdkCallbacks);
-        var mgr = new GameObject("MaxSdkCallbacks", type)
-            .GetComponent<MaxSdkCallbacks>(); // Its Awake() method sets Instance.
-        if (MaxSdkCallbacks.Instance != mgr)
-        {
-            MaxSdkLogger.UserWarning("It looks like you have the " + type.Name + " on a GameObject in your scene. Please remove the script from your scene.");
-        }
+        MaxEventExecutor.InitializeIfNeeded();
     }
 
     /// <summary>
@@ -481,9 +657,6 @@ public abstract class MaxSdkBase
     {
         var metaData = new Dictionary<string, string>(2);
         metaData.Add("UnityVersion", Application.unityVersion);
-
-        var graphicsMemorySize = SystemInfo.graphicsMemorySize;
-        metaData.Add("GraphicsMemorySizeMegabytes", graphicsMemorySize.ToString());
 
         return Json.Serialize(metaData);
     }
@@ -502,6 +675,52 @@ public abstract class MaxSdkBase
         var height = MaxSdkUtils.GetFloatFromDictionary(rectDict, "height", 0);
 
         return new Rect(originX, originY, width, height);
+    }
+
+    protected static void HandleExtraParameter(string key, string value)
+    {
+        bool disableAllLogs;
+        if ("disable_all_logs".Equals(key) && bool.TryParse(value, out disableAllLogs))
+        {
+            DisableAllLogs = disableAllLogs;
+        }
+    }
+
+    /// <summary>
+    /// Handles forwarding callbacks from native to C#.
+    /// </summary>
+    /// <param name="propsStr">A prop string with the event data</param>
+    protected static void HandleBackgroundCallback(string propsStr)
+    {
+        try
+        {
+            MaxSdkCallbacks.ForwardEvent(propsStr);
+        }
+        catch (Exception exception)
+        {
+            var eventProps = Json.Deserialize(propsStr) as Dictionary<string, object>;
+            if (eventProps == null) return;
+
+            var eventName = MaxSdkUtils.GetStringFromDictionary(eventProps, "name", "");
+            MaxSdkLogger.UserError("Unable to notify ad delegate due to an error in the publisher callback '" + eventName + "' due to exception: " + exception.Message);
+            MaxSdkLogger.LogException(exception);
+        }
+    }
+
+    protected static string SerializeLocalExtraParameterValue(object value)
+    {
+        if (!(value.GetType().IsPrimitive || value is string || value is IList || value is IDictionary))
+        {
+            MaxSdkLogger.UserError("Local extra parameters must be an IList, IDictionary, string, or a primitive type");
+            return "";
+        }
+
+        Dictionary<string, object> data = new Dictionary<string, object>
+        {
+            {"value", value}
+        };
+
+        return Json.Serialize(data);
     }
 
     [Obsolete("This API has been deprecated and will be removed in a future release.")]
@@ -595,157 +814,6 @@ internal static class AdPositionExtenstion
         else // position == MaxSdkBase.AdViewPosition.BottomRight
         {
             return "bottom_right";
-        }
-    }
-}
-
-namespace AppLovinMax.Internal.API
-{
-    public class CFError
-    {
-        /// <summary>
-        /// Indicates that the flow ended in an unexpected state.
-        /// </summary>
-        public const int ErrorCodeUnspecified = -1;
-
-        /// <summary>
-        /// Indicates that the consent flow has not been integrated correctly.
-        /// </summary>
-        public const int ErrorCodeInvalidIntegration = -100;
-
-        /// <summary>
-        /// Indicates that the consent flow is already being shown.
-        /// </summary>
-        public const int ErrorCodeFlowAlreadyInProgress = -200;
-
-        /// <summary>
-        /// Indicates that the user is not in a GDPR region.
-        /// </summary>
-        public const int ErrorCodeNotInGdprRegion = -300;
-
-        /// <summary>
-        /// The error code for this error. Will be one of the error codes listed in this file.
-        /// </summary>
-        public int Code { get; private set; }
-
-        /// <summary>
-        /// The error message for this error.
-        /// </summary>
-        public string Message { get; private set; }
-
-        public static CFError Create(IDictionary<string, object> errorObject)
-        {
-            if (!errorObject.ContainsKey("code") && !errorObject.ContainsKey("message")) return null;
-
-            var code = MaxSdkUtils.GetIntFromDictionary(errorObject, "code", ErrorCodeUnspecified);
-            var message = MaxSdkUtils.GetStringFromDictionary(errorObject, "message");
-            return new CFError(code, message);
-        }
-
-        private CFError(int code, string message)
-        {
-            Code = code;
-            Message = message;
-        }
-
-        public override string ToString()
-        {
-            return "[CFError Code: " + Code +
-                   ", Message: " + Message + "]";
-        }
-    }
-
-    public enum CFType
-    {
-        /// <summary>
-        /// The flow type is not known.
-        /// </summary>
-        Unknown,
-
-        /// <summary>
-        /// A standard flow where a TOS/PP alert is shown.
-        /// </summary>
-        Standard,
-
-        /// <summary>
-        /// A detailed modal shown to users in GDPR region.
-        /// </summary>
-        Detailed
-    }
-
-    public class CFService
-    {
-        private static Action<CFError> OnConsentFlowCompletedAction;
-
-#if UNITY_EDITOR
-#elif UNITY_ANDROID
-        private static readonly AndroidJavaClass MaxUnityPluginClass = new AndroidJavaClass("com.applovin.mediation.unity.MaxUnityPlugin");
-#elif UNITY_IOS
-        [DllImport("__Internal")]
-        private static extern string _MaxGetCFType();
-
-        [DllImport("__Internal")]
-        private static extern void _MaxStartConsentFlow();
-#endif
-
-        /// <summary>
-        /// The consent flow type that will be displayed.
-        /// </summary>
-        public static CFType CFType
-        {
-            get
-            {
-                var cfType = "0";
-#if UNITY_EDITOR
-#elif UNITY_ANDROID
-                cfType = MaxUnityPluginClass.CallStatic<string>("getCFType");
-#elif UNITY_IOS
-                cfType = _MaxGetCFType();
-#endif
-
-                if ("1".Equals(cfType))
-                {
-                    return CFType.Standard;
-                }
-                else if ("2".Equals(cfType))
-                {
-                    return CFType.Detailed;
-                }
-
-                return CFType.Unknown;
-            }
-        }
-
-        /// <summary>
-        /// Starts the consent flow. Call this method to re-show the consent flow for a user in GDPR region.
-        ///
-        /// Note: The flow will only be shown to users in GDPR regions.
-        /// </summary>
-        /// <param name="onFlowCompletedAction">Called when we finish showing the consent flow. Error object will be <c>null</c> if the flow completed successfully.</param>
-        public static void SCF(Action<CFError> onFlowCompletedAction)
-        {
-            OnConsentFlowCompletedAction = onFlowCompletedAction;
-
-#if UNITY_EDITOR
-            var errorDict = new Dictionary<string, object>()
-            {
-                {"code", CFError.ErrorCodeUnspecified},
-                {"message", "Consent flow is not supported in Unity Editor."}
-            };
-
-            NotifyConsentFlowCompletedIfNeeded(errorDict);
-#elif UNITY_ANDROID
-            MaxUnityPluginClass.CallStatic("startConsentFlow");
-#elif UNITY_IOS
-            _MaxStartConsentFlow();
-#endif
-        }
-
-        public static void NotifyConsentFlowCompletedIfNeeded(IDictionary<string, object> error)
-        {
-            if (OnConsentFlowCompletedAction == null) return;
-
-            OnConsentFlowCompletedAction(CFError.Create(error));
         }
     }
 }
