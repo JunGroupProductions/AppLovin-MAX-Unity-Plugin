@@ -1,0 +1,50 @@
+
+#Ignore oversizes unity CPP output
+unityLibrary/src/main/Il2CppOutputProject
+unityLibrary/src/main/jniLibs
+
+# generated files
+bin/
+gen/
+
+# Ignore gradle files
+.gradle/
+build/
+release/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Intellij IDEA (see https://intellij-support.jetbrains.com/entries/23393067)
+.idea/*
+!.idea/runConfigurations
+
+# Proguard
+hyprmx-obfuscated.map
+
+*.ipr
+*.iws
+classes
+gen-external-apklibs
+
+# release project
+release/HyprMX_Android_*
+
+# Intellij
+*.iml
+
+/captures
+
+Android-SDKs-Private-Master/
+Android-SDKs-Private-ReleaseCandidate/
+
+MavenRepo/
+MavenRepoReleaseCandidate/
+
+/tmp/
+
+dist/
+
+.gradletasknamecache
+
+.safedk

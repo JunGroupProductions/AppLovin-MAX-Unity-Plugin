@@ -1,0 +1,28 @@
+pluginManagement {
+    repositories {
+        maven { url 'https://artifacts.applovin.com/android'; content { includeGroupByRegex 'com.applovin.*' } }
+        
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+
+include ':launcher', ':unityLibrary'
+include 'unityLibrary:DemoApp.androidlib'
+
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        
+        google()
+        mavenCentral()
+// Android Resolver Repos Start
+        mavenLocal()
+// Android Resolver Repos End
+        flatDir {
+            dirs "${project(':unityLibrary').projectDir}/libs"
+        }
+    }
+}
