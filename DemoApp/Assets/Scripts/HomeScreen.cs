@@ -41,6 +41,8 @@ public class HomeScreen : MonoBehaviour
         showMRecButton.onClick.AddListener(ToggleMRecVisibility);
         mediationDebuggerButton.onClick.AddListener(MaxSdk.ShowMediationDebugger);
 
+        HyprMXAdapter.enableTestMode();
+
         MaxSdkCallbacks.OnSdkInitializedEvent += sdkConfiguration =>
         {
             // AppLovin SDK is initialized, configure and start loading ads.
@@ -56,7 +58,6 @@ public class HomeScreen : MonoBehaviour
             Adjust.start(adjustConfig);
         };
 
-        MaxSdk.SetSdkKey(MaxSdkKey);
         MaxSdk.InitializeSdk();
     }
 

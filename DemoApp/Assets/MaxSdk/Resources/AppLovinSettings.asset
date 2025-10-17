@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AppLovinSettings
   m_EditorClassIdentifier: 
   qualityServiceEnabled: 1
-  sdkKey: 
+  sdkKey: 6PWwCzA5D1Qa72M7sS1JDgn87od9o6UMSEITB46TEkDFSIy8bouUDhZ9Igq_dH2mm0ahzFSePdK-7mxeTE0iQ2
   setAttributionReportEndpoint: 0
   customGradleVersionUrl: 
   customGradleToolsVersion: 
