@@ -117,17 +117,53 @@ public abstract class MaxSdkBase
         BottomRight
     }
 
-    public enum BannerPosition
+    public class AdViewConfiguration
     {
-        TopLeft,
-        TopCenter,
-        TopRight,
-        Centered,
-        CenterLeft,
-        CenterRight,
-        BottomLeft,
-        BottomCenter,
-        BottomRight
+        /// <summary>
+        /// The position of the ad.
+        /// </summary>
+        public AdViewPosition Position { get; private set; }
+
+        /// <summary>
+        /// The horizontal (X) position of the banner, relative to the top-left corner of the screen's safe area.
+        /// </summary>
+        public float XCoordinate { get; private set; }
+
+        /// <summary>
+        /// The vertical (Y) position of the banner, relative to the top-left corner of the screen's safe area.
+        /// </summary>
+        public float YCoordinate { get; private set; }
+
+        /// <summary>
+        /// Whether to use adaptive banners. Has no effect on MREC ads.
+        /// </summary>
+        public bool IsAdaptive { get; set; }
+
+        internal bool UseCoordinates { get; private set; }
+
+        /// <summary>
+        /// Creates an AdViewConfiguration with the given AdViewPosition.
+        /// </summary>
+        /// <param name="position">The position of the ad. Must not be null.</param>
+        public AdViewConfiguration(AdViewPosition position)
+        {
+            Position = position;
+            IsAdaptive = true;
+            UseCoordinates = false;
+        }
+
+        /// <summary>
+        /// Creates an AdViewConfiguration with the given x and y coordinates.
+        /// </summary>
+        /// <param name="x">The horizontal (X) position of the banner, relative to the top-left corner of the screen's safe area.</param>
+        /// <param name="y">The vertical (Y) position of the banner, relative to the top-left corner of the screen's safe area.</param>
+        public AdViewConfiguration(float x, float y)
+        {
+            XCoordinate = x;
+            YCoordinate = y;
+            IsAdaptive = true;
+            UseCoordinates = true;
+        }
     }
 
     public class SdkConfiguration
@@ -723,6 +759,22 @@ public abstract class MaxSdkBase
         return Json.Serialize(data);
     }
 
+    #region Obsolete
+
+    [Obsolete("This API has been deprecated and will be removed in a future release. Please use AdViewPosition instead.")]
+    public enum BannerPosition
+    {
+        TopLeft,
+        TopCenter,
+        TopRight,
+        Centered,
+        CenterLeft,
+        CenterRight,
+        BottomLeft,
+        BottomCenter,
+        BottomRight
+    }
+
     [Obsolete("This API has been deprecated and will be removed in a future release.")]
     public enum ConsentDialogState
     {
@@ -730,6 +782,8 @@ public abstract class MaxSdkBase
         Applies,
         DoesNotApply
     }
+
+    #endregion
 }
 
 /// <summary>
@@ -737,46 +791,6 @@ public abstract class MaxSdkBase
 /// </summary>
 internal static class AdPositionExtenstion
 {
-    public static string ToSnakeCaseString(this MaxSdkBase.BannerPosition position)
-    {
-        if (position == MaxSdkBase.BannerPosition.TopLeft)
-        {
-            return "top_left";
-        }
-        else if (position == MaxSdkBase.BannerPosition.TopCenter)
-        {
-            return "top_center";
-        }
-        else if (position == MaxSdkBase.BannerPosition.TopRight)
-        {
-            return "top_right";
-        }
-        else if (position == MaxSdkBase.BannerPosition.Centered)
-        {
-            return "centered";
-        }
-        else if (position == MaxSdkBase.BannerPosition.CenterLeft)
-        {
-            return "center_left";
-        }
-        else if (position == MaxSdkBase.BannerPosition.CenterRight)
-        {
-            return "center_right";
-        }
-        else if (position == MaxSdkBase.BannerPosition.BottomLeft)
-        {
-            return "bottom_left";
-        }
-        else if (position == MaxSdkBase.BannerPosition.BottomCenter)
-        {
-            return "bottom_center";
-        }
-        else // position == MaxSdkBase.BannerPosition.BottomRight
-        {
-            return "bottom_right";
-        }
-    }
-
     public static string ToSnakeCaseString(this MaxSdkBase.AdViewPosition position)
     {
         if (position == MaxSdkBase.AdViewPosition.TopLeft)

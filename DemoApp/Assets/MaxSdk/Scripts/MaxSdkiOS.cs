@@ -250,35 +250,27 @@ public class MaxSdkiOS : MaxSdkBase
     #region Banners
 
     [DllImport("__Internal")]
-    private static extern void _MaxCreateBanner(string adUnitIdentifier, string bannerPosition);
+    private static extern void _MaxCreateBanner(string adUnitIdentifier, string bannerPosition, bool isAdaptive);
+
+    [DllImport("__Internal")]
+    private static extern void _MaxCreateBannerXY(string adUnitIdentifier, float x, float y, bool isAdaptive);
 
     /// <summary>
     /// Create a new banner.
     /// </summary>
     /// <param name="adUnitIdentifier">Ad unit identifier of the banner to create. Must not be null.</param>
-    /// <param name="bannerPosition">Banner position. Must not be null.</param>
-    public static void CreateBanner(string adUnitIdentifier, BannerPosition bannerPosition)
+    /// <param name="configuration">The configuration for the banner</param>
+    public static void CreateBanner(string adUnitIdentifier, AdViewConfiguration configuration)
     {
         ValidateAdUnitIdentifier(adUnitIdentifier, "create banner");
-        _MaxCreateBanner(adUnitIdentifier, bannerPosition.ToSnakeCaseString());
-    }
-
-    [DllImport("__Internal")]
-    private static extern void _MaxCreateBannerXY(string adUnitIdentifier, float x, float y);
-
-    /// <summary>
-    /// Create a new banner with a custom position.
-    /// </summary>
-    /// <param name="adUnitIdentifier">Ad unit identifier of the banner to create. Must not be null.</param>
-    /// <param name="x">The X coordinate (horizontal position) of the banner relative to the top left corner of the screen.</param>
-    /// <param name="y">The Y coordinate (vertical position) of the banner relative to the top left corner of the screen.</param>
-    /// <seealso cref="GetBannerLayout">
-    /// The banner is placed within the safe area of the screen. You can use this to get the absolute position of the banner on screen.
-    /// </seealso>
-    public static void CreateBanner(string adUnitIdentifier, float x, float y)
-    {
-        ValidateAdUnitIdentifier(adUnitIdentifier, "create banner");
-        _MaxCreateBannerXY(adUnitIdentifier, x, y);
+        if (configuration.UseCoordinates)
+        {
+            _MaxCreateBannerXY(adUnitIdentifier, configuration.XCoordinate, configuration.YCoordinate, configuration.IsAdaptive);
+        }
+        else
+        {
+            _MaxCreateBanner(adUnitIdentifier, configuration.Position.ToSnakeCaseString(), configuration.IsAdaptive);
+        }
     }
 
     [DllImport("__Internal")]
@@ -344,7 +336,7 @@ public class MaxSdkiOS : MaxSdkBase
     /// </summary>
     /// <param name="adUnitIdentifier">The ad unit identifier of the banner for which to update the position. Must not be null.</param>
     /// <param name="bannerPosition">A new position for the banner. Must not be null.</param>
-    public static void UpdateBannerPosition(string adUnitIdentifier, BannerPosition bannerPosition)
+    public static void UpdateBannerPosition(string adUnitIdentifier, AdViewPosition bannerPosition)
     {
         ValidateAdUnitIdentifier(adUnitIdentifier, "update banner position");
         _MaxUpdateBannerPosition(adUnitIdentifier, bannerPosition.ToSnakeCaseString());
@@ -514,33 +506,25 @@ public class MaxSdkiOS : MaxSdkBase
     [DllImport("__Internal")]
     private static extern void _MaxCreateMRec(string adUnitIdentifier, string mrecPosition);
 
-    /// <summary>
-    /// Create a new MREC.
-    /// </summary>
-    /// <param name="adUnitIdentifier">Ad unit identifier of the MREC to create. Must not be null.</param>
-    /// <param name="mrecPosition">MREC position. Must not be null.</param>
-    public static void CreateMRec(string adUnitIdentifier, AdViewPosition mrecPosition)
-    {
-        ValidateAdUnitIdentifier(adUnitIdentifier, "create MREC");
-        _MaxCreateMRec(adUnitIdentifier, mrecPosition.ToSnakeCaseString());
-    }
-
     [DllImport("__Internal")]
     private static extern void _MaxCreateMRecXY(string adUnitIdentifier, float x, float y);
 
     /// <summary>
-    /// Create a new MREC with a custom position.
+    /// Create a new MREC.
     /// </summary>
     /// <param name="adUnitIdentifier">Ad unit identifier of the MREC to create. Must not be null.</param>
-    /// <param name="x">The X coordinate (horizontal position) of the MREC relative to the top left corner of the screen.</param>
-    /// <param name="y">The Y coordinate (vertical position) of the MREC relative to the top left corner of the screen.</param>
-    /// <seealso cref="GetMRecLayout">
-    /// The MREC is placed within the safe area of the screen. You can use this to get the absolute position Rect of the MREC on screen.
-    /// </seealso>
-    public static void CreateMRec(string adUnitIdentifier, float x, float y)
+    /// <param name="configuration">The configuration for the MREC.</param>
+    public static void CreateMRec(string adUnitIdentifier, AdViewConfiguration configuration)
     {
         ValidateAdUnitIdentifier(adUnitIdentifier, "create MREC");
-        _MaxCreateMRecXY(adUnitIdentifier, x, y);
+        if (configuration.UseCoordinates)
+        {
+            _MaxCreateMRecXY(adUnitIdentifier, configuration.XCoordinate, configuration.YCoordinate);
+        }
+        else
+        {
+            _MaxCreateMRec(adUnitIdentifier, configuration.Position.ToSnakeCaseString());
+        }
     }
 
     [DllImport("__Internal")]
@@ -1197,6 +1181,38 @@ public class MaxSdkiOS : MaxSdkBase
     #endregion
 
     #region Obsolete
+
+    [Obsolete("This API has been deprecated and will be removed in a future release. Please use CreateBanner(string adUnitIdentifier, AdViewConfiguration configuration) instead.")]
+    public static void CreateBanner(string adUnitIdentifier, BannerPosition bannerPosition)
+    {
+        // AdViewPosition and BannerPosition share identical enum values, so casting is safe
+        CreateBanner(adUnitIdentifier, new AdViewConfiguration((AdViewPosition) bannerPosition));
+    }
+
+    [Obsolete("This API has been deprecated and will be removed in a future release. Please use CreateBanner(string adUnitIdentifier, AdViewConfiguration configuration) instead.")]
+    public static void CreateBanner(string adUnitIdentifier, float x, float y)
+    {
+        CreateBanner(adUnitIdentifier, new AdViewConfiguration(x, y));
+    }
+
+    [Obsolete("This API has been deprecated and will be removed in a future release. Please use UpdateBannerPosition(string adUnitIdentifier, AdViewPosition bannerPosition) instead.")]
+    public static void UpdateBannerPosition(string adUnitIdentifier, BannerPosition bannerPosition)
+    {
+        // AdViewPosition and BannerPosition share identical enum values, so casting is safe
+        UpdateBannerPosition(adUnitIdentifier, (AdViewPosition) bannerPosition);
+    }
+
+    [Obsolete("This API has been deprecated and will be removed in a future release. Please use CreateMRec(string adUnitIdentifier, AdViewConfiguration configuration) instead.")]
+    public static void CreateMRec(string adUnitIdentifier, AdViewPosition mrecPosition)
+    {
+        CreateMRec(adUnitIdentifier, new AdViewConfiguration(mrecPosition));
+    }
+
+    [Obsolete("This API has been deprecated and will be removed in a future release. Please use CreateMRec(string adUnitIdentifier, AdViewConfiguration configuration) instead.")]
+    public static void CreateMRec(string adUnitIdentifier, float x, float y)
+    {
+        CreateMRec(adUnitIdentifier, new AdViewConfiguration(x, y));
+    }
 
     [DllImport("__Internal")]
     private static extern void _MaxSetSdkKey(string sdkKey);
