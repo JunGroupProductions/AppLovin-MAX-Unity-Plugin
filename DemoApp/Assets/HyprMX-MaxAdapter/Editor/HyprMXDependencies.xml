@@ -7,7 +7,5 @@
   <iosPods>
     <iosPod name="HyprMX-Max" version="6.4.4.1" bitcodeEnabled="false">
     </iosPod>
-    <iosPod name="HyprMX" version="6.4.4" bitcodeEnabled="false">
-    </iosPod>
   </iosPods>
 </dependencies>
