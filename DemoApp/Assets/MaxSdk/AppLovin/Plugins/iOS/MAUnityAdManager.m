@@ -1023,7 +1023,7 @@ static ALUnityBackgroundCallback backgroundCallback;
         }
         else if ( MAAdFormat.rewarded == adFormat )
         {
-            name = @"OnExpiredRewardedAdReloadedEvent ";
+            name = @"OnExpiredRewardedAdReloadedEvent";
         }
         else
         {

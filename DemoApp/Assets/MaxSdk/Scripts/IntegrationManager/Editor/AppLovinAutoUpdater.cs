@@ -32,7 +32,6 @@ namespace AppLovinMax.Scripts.IntegrationManager.Editor
             {"FACEBOOK_MEDIATE", "android_6.17.0.1_ios_6.15.2.1"},
             {"FYBER_NETWORK", "android_8.3.1.1_ios_8.3.2.1"},
             {"GOOGLE_AD_MANAGER_NETWORK", "android_23.3.0.1_ios_11.9.0.1"},
-            {"HYPRMX_NETWORK", "android_6.4.2.1_ios_6.4.1.0.1"},
             {"INMOBI_NETWORK", "android_10.7.7.1_ios_10.7.5.1"},
             {"IRONSOURCE_NETWORK", "android_8.3.0.0.2_ios_8.3.0.0.1"},
             {"LINE_NETWORK", "android_2024.8.27.1_ios_2.8.20240827.1"},

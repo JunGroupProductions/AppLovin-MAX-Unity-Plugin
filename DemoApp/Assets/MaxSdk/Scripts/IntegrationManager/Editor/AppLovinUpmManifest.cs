@@ -83,10 +83,11 @@ namespace AppLovinMax.Scripts.IntegrationManager.Editor
         /// Removes a dependency from the manifest.
         /// </summary>
         /// <param name="packageName">The name of the package to remove</param>
-        public void RemovePackageDependency(string packageName)
+        /// <returns><c>true</c> if the dependency existed and was removed.</returns>
+        public bool RemovePackageDependency(string packageName)
         {
             var manifestDependencies = GetDependencies();
-            manifestDependencies.Remove(packageName);
+            return manifestDependencies.Remove(packageName);
         }
 
         #region Utility

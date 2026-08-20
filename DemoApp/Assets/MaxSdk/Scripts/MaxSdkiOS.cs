@@ -79,6 +79,20 @@ public class MaxSdkiOS : MaxSdkBase
     }
 
     [DllImport("__Internal")]
+    private static extern void _MaxSetUserData(string serializedUserData);
+
+    /// <summary>
+    /// Sets user identity data to attach to SDK events and ad requests.
+    /// Pass <c>null</c> to clear the previously set user data.
+    /// </summary>
+    /// <param name="userData">The user identity data to set, or <c>null</c> to clear it.</param>
+    public static void SetUserData(MaxUserData userData)
+    {
+        var serializedUserData = userData == null ? null : Json.Serialize(userData.ToDictionary());
+        _MaxSetUserData(serializedUserData);
+    }
+
+    [DllImport("__Internal")]
     private static extern bool _MaxSetSegmentCollection(string segmentCollectionsJson);
 
     /// <summary>

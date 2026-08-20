@@ -100,6 +100,13 @@ public class MaxSdkUnityEditor : MaxSdkBase
     public static void SetUserId(string userId) { }
 
     /// <summary>
+    /// Sets user identity data to attach to SDK events and ad requests.
+    /// This method is a no-op in the Unity Editor.
+    /// </summary>
+    /// <param name="userData">The user identity data to set, or <c>null</c> to clear it.</param>
+    public static void SetUserData(MaxUserData userData) { }
+
+    /// <summary>
     /// Set the <see cref="MaxSegmentCollection"/>.
     /// </summary>
     /// <param name="segmentCollection"> The segment collection to be set. Must not be {@code null}</param>
