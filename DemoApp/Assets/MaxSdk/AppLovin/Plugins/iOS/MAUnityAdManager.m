@@ -1023,7 +1023,7 @@ static ALUnityBackgroundCallback backgroundCallback;
         }
         else if ( MAAdFormat.rewarded == adFormat )
         {
-            name = @"OnExpiredRewardedAdReloadedEvent ";
+            name = @"OnExpiredRewardedAdReloadedEvent";
         }
         else
         {
@@ -1987,6 +1987,8 @@ static ALUnityBackgroundCallback backgroundCallback;
 
 - (NSString *)requestLatencyMillisFromRequestLatency:(NSTimeInterval)requestLatency
 {
+    if ( requestLatency == -1 ) return @"-1";
+    
     // Convert latency from seconds to milliseconds to match Android.
     long requestLatencyMillis = requestLatency * 1000;
     return @(requestLatencyMillis).stringValue;

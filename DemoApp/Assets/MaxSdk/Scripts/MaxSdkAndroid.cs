@@ -64,6 +64,23 @@ public class MaxSdkAndroid : MaxSdkBase
     }
 
     /// <summary>
+    /// Sets user identity data to attach to SDK events and ad requests.
+    /// Pass <c>null</c> to clear the previously set user data.
+    /// </summary>
+    /// <param name="userData">The user identity data to set, or <c>null</c> to clear it.</param>
+    public static void SetUserData(MaxUserData userData)
+    {
+        if (userData == null)
+        {
+            MaxUnityPluginClass.CallStatic("clearUserData");
+            return;
+        }
+
+        var serializedUserData = Json.Serialize(userData.ToDictionary());
+        MaxUnityPluginClass.CallStatic("setUserData", serializedUserData);
+    }
+
+    /// <summary>
     /// Set the <see cref="MaxSegmentCollection"/>.
     /// </summary>
     /// <param name="segmentCollection"> The segment collection to be set. Must not be {@code null}</param>
@@ -812,7 +829,9 @@ public class MaxSdkAndroid : MaxSdkBase
     /// <param name="parameters">A dictionary containing key-value pairs further describing this event.</param>
     public static void TrackEvent(string name, IDictionary<string, string> parameters = null)
     {
-        MaxUnityPluginClass.CallStatic("trackEvent", name, Json.Serialize(parameters));
+        // Convert null to "{}" to avoid Unity sending the literal "null" to Android.
+        var jsonString = ( parameters == null ) ? EmptyJson : Json.Serialize(parameters);
+        MaxUnityPluginClass.CallStatic("trackEvent", name, jsonString);
     }
 
     #endregion

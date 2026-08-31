@@ -15,15 +15,37 @@ namespace AppLovinMax.Scripts.IntegrationManager.Editor
     [InitializeOnLoad]
     public class AppLovinInitialize
     {
-        private static readonly List<string> ObsoleteNetworks = new List<string>
+        private class ObsoleteNetwork
         {
-            "AdColony",
-            "Criteo",
-            "Nend",
-            "Snap",
-            "Tapjoy",
-            "VerizonAds",
-            "VoodooAds"
+            private readonly string name;
+            public List<string> Packages { get; private set; }
+
+            public ObsoleteNetwork(string name, params string[] packages)
+            {
+                this.name = name;
+                Packages = new List<string>(packages);
+            }
+
+            public string GetNetworkPath()
+            {
+                return "MaxSdk/Mediation/" + name;
+            }
+        }
+
+        private static readonly List<ObsoleteNetwork> ObsoleteNetworks = new List<ObsoleteNetwork>
+        {
+            new ObsoleteNetwork("AdColony"),
+            new ObsoleteNetwork("Criteo"),
+            new ObsoleteNetwork("CSJ", "com.applovin.mediation.adapters.csj.ios"),
+            new ObsoleteNetwork("HyprMX", "com.applovin.mediation.adapters.hyprmx.android", "com.applovin.mediation.adapters.hyprmx.ios"),
+            new ObsoleteNetwork("Maio", "com.applovin.mediation.adapters.maio.android", "com.applovin.mediation.adapters.maio.ios"),
+            new ObsoleteNetwork("MyTarget", "com.applovin.mediation.adapters.mytarget.android", "com.applovin.mediation.adapters.mytarget.ios"),
+            new ObsoleteNetwork("Nend"),
+            new ObsoleteNetwork("Snap"),
+            new ObsoleteNetwork("Tapjoy"),
+            new ObsoleteNetwork("TencentGDT", "com.applovin.mediation.adapters.tencentgdt.ios"),
+            new ObsoleteNetwork("VerizonAds"),
+            new ObsoleteNetwork("VoodooAds")
         };
 
         private static readonly List<string> ObsoleteFileExportPathsToDelete = new List<string>
@@ -73,9 +95,14 @@ namespace AppLovinMax.Scripts.IntegrationManager.Editor
             "MaxSdk/Version.md.meta",
 
             // The alert_icon.png has been renamed to error_icon.png.
-            "MaxSdk/Resources/Images/alert_icon.png"
+            "MaxSdk/Resources/Images/alert_icon.png",
+            "MaxSdk/Resources/Images/alert_icon.png.meta",
 
-            // TODO: Add MaxTargetingData and MaxUserSegment when the plugin has enough traction.
+            // `TargetingData` has been removed and we no longer set `UserSegment` through the Unity Plugin.
+            "MaxSdk/Scripts/MaxUserSegment.cs",
+            "MaxSdk/Scripts/MaxUserSegment.cs.meta",
+            "MaxSdk/Scripts/MaxTargetingData.cs",
+            "MaxSdk/Scripts/MaxTargetingData.cs.meta"
         };
 
         static AppLovinInitialize()
@@ -90,45 +117,97 @@ namespace AppLovinMax.Scripts.IntegrationManager.Editor
                 MaxSdkLogger.UserError("Detected iOS project version less than iOS 9 - The AppLovin MAX SDK WILL NOT WORK ON < iOS9!!!");
             }
 #endif
-
-            var isPluginInPackageManager = AppLovinIntegrationManager.IsPluginInPackageManager;
-            if (!isPluginInPackageManager)
+            if (AppLovinIntegrationManager.IsPluginInPackageManager)
             {
-                var changesMade = false;
-                foreach (var obsoleteFileExportPathToDelete in ObsoleteFileExportPathsToDelete)
+                var appLovinManifest = AppLovinUpmManifest.Load();
+                if (RemoveObsoleteNetworkPackages(appLovinManifest))
                 {
-                    var pathToDelete = MaxSdkUtils.GetAssetPathForExportPath(obsoleteFileExportPathToDelete);
-                    if (CheckExistence(pathToDelete))
-                    {
-                        MaxSdkLogger.UserDebug("Deleting obsolete file '" + pathToDelete + "' that is no longer needed.");
-                        FileUtil.DeleteFileOrDirectory(pathToDelete);
-                        changesMade = true;
-                    }
+                    appLovinManifest.Save();
+                    AppLovinUpmPackageManager.ResolvePackageManager();
+                    MaxSdkLogger.UserDebug("Obsolete networks removed.");
                 }
+            }
+            else
+            {
+                var filesRemoved = RemoveObsoleteFiles();
+                var networksRemoved = RemoveObsoleteNetworks();
 
-                var pluginParentDir = AppLovinIntegrationManager.PluginParentDirectory;
-                // Check if any obsolete networks are installed
-                foreach (var obsoleteNetwork in ObsoleteNetworks)
+                if (filesRemoved || networksRemoved)
                 {
-                    var networkDir = Path.Combine(pluginParentDir, "MaxSdk/Mediation/" + obsoleteNetwork);
-                    if (CheckExistence(networkDir))
-                    {
-                        MaxSdkLogger.UserDebug("Deleting obsolete network " + obsoleteNetwork + " from path " + networkDir + "...");
-                        FileUtil.DeleteFileOrDirectory(networkDir);
-                        FileUtil.DeleteFileOrDirectory(networkDir + ".meta");
-                        changesMade = true;
-                    }
-                }
-
-                // Refresh UI
-                if (changesMade)
-                {
+                    // Refresh UI
                     AssetDatabase.Refresh();
                     MaxSdkLogger.UserDebug("Obsolete networks and files removed.");
                 }
             }
 
             AppLovinAutoUpdater.Update();
+        }
+
+        /// <summary>
+        /// Removes obsolete files from the Unity project.
+        /// </summary>
+        /// <returns>True if any changes were made, otherwise returns false</returns>
+        private static bool RemoveObsoleteFiles()
+        {
+            var changesMade = false;
+            foreach (var obsoleteFileExportPathToDelete in ObsoleteFileExportPathsToDelete)
+            {
+                var pathToDelete = MaxSdkUtils.GetAssetPathForExportPath(obsoleteFileExportPathToDelete);
+                if (CheckExistence(pathToDelete))
+                {
+                    MaxSdkLogger.UserDebug("Deleting obsolete file '" + pathToDelete + "' that is no longer needed.");
+                    FileUtil.DeleteFileOrDirectory(pathToDelete);
+                    changesMade = true;
+                }
+            }
+
+            return changesMade;
+        }
+
+        /// <summary>
+        /// Removes obsolete networks from the Unity project.
+        /// </summary>
+        /// <returns>True if any changes were made, otherwise returns false</returns>
+        private static bool RemoveObsoleteNetworks()
+        {
+            var changesMade = false;
+            var pluginParentDir = AppLovinIntegrationManager.PluginParentDirectory;
+            // Check if any obsolete networks are installed
+            foreach (var obsoleteNetwork in ObsoleteNetworks)
+            {
+                var networkDir = Path.Combine(pluginParentDir, obsoleteNetwork.GetNetworkPath());
+                if (CheckExistence(networkDir))
+                {
+                    MaxSdkLogger.UserDebug("Deleting obsolete network " + obsoleteNetwork + " from path " + networkDir + "...");
+                    FileUtil.DeleteFileOrDirectory(networkDir);
+                    FileUtil.DeleteFileOrDirectory(networkDir + ".meta");
+                    changesMade = true;
+                }
+            }
+
+            return changesMade;
+        }
+
+        /// <summary>
+        /// Removes obsolete network packages from the Unity project.
+        /// </summary>
+        /// <returns>True if any changes were made, otherwise returns false</returns>
+        private static bool RemoveObsoleteNetworkPackages(AppLovinUpmManifest appLovinManifest)
+        {
+            var changesMade = false;
+            foreach (var obsoleteNetwork in ObsoleteNetworks)
+            {
+                foreach (var packageName in obsoleteNetwork.Packages)
+                {
+                    if (appLovinManifest.RemovePackageDependency(packageName))
+                    {
+                        MaxSdkLogger.UserDebug("Uninstalling obsolete network package" + packageName);
+                        changesMade = true;
+                    }
+                }
+            }
+
+            return changesMade;
         }
 
         private static bool CheckExistence(string location)

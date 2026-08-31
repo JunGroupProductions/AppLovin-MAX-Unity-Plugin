@@ -8,7 +8,7 @@
 
 #import "MAUnityAdManager.h"
 
-#define VERSION @"8.5.1"
+#define VERSION @"8.6.5"
 #define NSSTRING(_X) ( (_X != NULL) ? [NSString stringWithCString: _X encoding: NSStringEncodingConversionAllowLossy].al_stringByTrimmingWhitespace : nil)
 
 @interface NSString (ALUtils)
@@ -230,6 +230,33 @@ extern "C"
     void _MaxSetUserId(const char *userId)
     {
         getSdk().settings.userIdentifier = NSSTRING(userId);
+    }
+
+    void _MaxSetUserData(const char *serializedUserData)
+    {
+        if ( !serializedUserData )
+        {
+            getSdk().userData = nil;
+            return;
+        }
+
+        NSString *serializedUserDataString = NSSTRING(serializedUserData);
+        NSError *error;
+        id jsonObject = [NSJSONSerialization JSONObjectWithData: [serializedUserDataString dataUsingEncoding: NSUTF8StringEncoding]
+                                                        options: 0
+                                                          error: &error];
+        if ( error || ![jsonObject isKindOfClass: NSDictionary.class] )
+        {
+            max_unity_log_error([NSString stringWithFormat: @"Failed to set user data due to invalid JSON: %@", error.localizedDescription]);
+            return;
+        }
+
+        NSDictionary<NSString *, id> *userDataDictionary = jsonObject;
+        ALUserData *userData = [ALUserData new];
+        userData.email = userDataDictionary[@"email"];
+        userData.phone = userDataDictionary[@"phone"];
+        userData.userId = userDataDictionary[@"userId"];
+        getSdk().userData = userData;
     }
 
     void _MaxSetSegmentCollection(const char *collectionJson)
