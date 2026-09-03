@@ -12,6 +12,8 @@ Assets/Plugins/Editor/JetBrains*
 ### Unity ###
 [Ll]ibrary/
 [Tt]emp/
+UserSettings/
+ProjectSettings/Packages/
 [Oo]bj/
 [Bb]uild/
 [Bb]uilds/
