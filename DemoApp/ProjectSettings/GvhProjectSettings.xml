@@ -3,7 +3,7 @@
   <projectSetting name="com.google.external-dependency-managerAnalyticsCookie" value="971fe1c46ec94bde92bc048371ab7fb8" />
   <projectSetting name="com.google.external-dependency-managerAnalyticsEnabled" value="True" />
   <projectSetting name="Google.IOSResolver.AutoPodToolInstallInEditor" value="True" />
-  <projectSetting name="Google.IOSResolver.CocoapodsIntegrationMethod" value="2" />
+  <projectSetting name="Google.IOSResolver.CocoapodsIntegrationMethod" value="0" />
   <projectSetting name="Google.IOSResolver.PodfileAddUseFrameworks" value="False" />
   <projectSetting name="Google.IOSResolver.PodfileAllowPodsInMultipleTargets" value="True" />
   <projectSetting name="Google.IOSResolver.PodfileAlwaysAddMainTarget" value="False" />

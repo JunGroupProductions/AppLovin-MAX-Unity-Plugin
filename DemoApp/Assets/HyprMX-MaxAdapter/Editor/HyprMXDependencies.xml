@@ -1,11 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
 <dependencies>
-  <androidPackages>
-    <androidPackage spec="com.hyprmx.android:HyprMX-Max:6.4.6.0">
-    </androidPackage>
-  </androidPackages>
-
-  <iosPods>
-    <iosPod name="HyprMX-Max" version="6.4.6.0" bitcodeEnabled="false">
-    </iosPod>
-  </iosPods>
+    <androidPackages>
+        <androidPackage spec="com.hyprmx.android:HyprMX-Max:6.4.6.0" />
+    </androidPackages>
+    <iosPods>
+        <iosPod name="HyprMX-Max" version="6.4.6.0" bitcodeEnabled="false" />
+    </iosPods>
+    <remoteSwiftPackage url="https://github.com/JunGroupProductions/HyprMX-MAX-SPM.git"
+        version="6.4.60"
+        upToNextMajor="true">
+        <swiftPackage name="HyprMX_Max" replacesPod="HyprMX-Max"/>
+    </remoteSwiftPackage>
+    <remoteSwiftPackage url="https://github.com/JunGroupProductions/HyprMX-SDK-SPM.git"
+        version="6.4.6">
+        <swiftPackage name="HyprMX" target="Main"/>
+    </remoteSwiftPackage>
+    <remoteSwiftPackage url="https://github.com/AppLovin/AppLovin-MAX-Swift-Package.git"
+        version="13.6.4"
+        upToNextMajor="true">
+        <swiftPackage name="AppLovinSDK" target="All" replacesPod="AppLovinSDK"/>
+    </remoteSwiftPackage>
 </dependencies>

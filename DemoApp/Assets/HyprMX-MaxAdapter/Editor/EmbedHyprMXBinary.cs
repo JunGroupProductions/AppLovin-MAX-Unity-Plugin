@@ -7,6 +7,7 @@ using System.IO;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.Callbacks;
+using UnityEditor.Build;
 using UnityEditor.iOS.Xcode;
 using UnityEditor.iOS.Xcode.Extensions;
 #endif
@@ -24,7 +25,21 @@ public class PostProcessHyprMX : MonoBehaviour {
     {
 #if UNITY_EDITOR_OSX
         if (target == BuildTarget.iOS) {
-            
+            // The HyprMX pod is absent: EDM4U >= 1.2.187 replaced it with the Swift
+            // package, which Xcode embeds natively. The target attribute that links
+            // HyprMX to the app target only exists in EDM4U 1.2.189+; 1.2.187-1.2.188
+            // resolve Swift packages but ignore it, which would leave HyprMX.framework
+            // unembedded and crash the app at launch, so fail the build instead.
+            if (!Directory.Exists(Path.Combine(buildPath, hyprMXPodsDirectory))) {
+                if (IOSResolverVersionBelow(new Version(1, 2, 189))) {
+                    throw new BuildFailedException(
+                        "HyprMX: External Dependency Manager 1.2.187-1.2.188 resolves Swift " +
+                        "packages but cannot embed the HyprMX framework (no target attribute " +
+                        "support). Upgrade EDM4U to 1.2.189 or newer.");
+                }
+                return;
+            }
+
             string projPath = PBXProject.GetPBXProjectPath(buildPath);
             PBXProject proj = new PBXProject();
             proj.ReadFromString(File.ReadAllText(projPath));
@@ -52,6 +67,18 @@ public class PostProcessHyprMX : MonoBehaviour {
 #endif
     }
     
+    /// <summary>
+    /// True when the External Dependency Manager's iOS Resolver is older than the
+    /// given version. Unknown (no iOS Resolver loaded) counts as not-below.
+    /// </summary>
+    private static bool IOSResolverVersionBelow(Version version)
+    {
+        var versionNumberType = Type.GetType("Google.IOSResolverVersionNumber, Google.IOSResolver");
+        var valueProperty = versionNumberType != null ? versionNumberType.GetProperty("Value") : null;
+        var resolverVersion = valueProperty != null ? valueProperty.GetValue(null, null) as Version : null;
+        return resolverVersion != null && resolverVersion < version;
+    }
+
     private static void EmbedHyprMXFramework(PBXProject proj, string projPath, string targetGuid, string framework)
     {
 #if UNITY_EDITOR_OSX
